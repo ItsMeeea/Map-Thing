@@ -37,7 +37,7 @@ food_list = """\u001b[34m
 [20] Tori Box
 """
 
-# map / graph thing is in google docs also the table
+# map / graph thing is in google docs also the table is in the docs
 
 # first row is the A* score of each col (used for A* search)
 # ex: B has A* score of 4.5
@@ -46,8 +46,9 @@ food_list = """\u001b[34m
 # ex: look at line 57 if starting at point A, line 63 if point G, line 69 if point M
 # ex: from point G to point B, it's 75 meters away
 
-# A-Q represent dlsu_list above in order
+# A-M represent dlsu_list above in order
 # AA-AT represent food_list above in order
+# N, O, P, Q arent on campus (e.g. Agno Street); they're just used in the algo
 
 # grabe ang tagal ko rito
 

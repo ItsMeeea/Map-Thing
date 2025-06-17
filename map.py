@@ -47,7 +47,7 @@ letter_names = OrderedDict([
 # first row is the A* score of each col (used for A* search)
 # ex: B has A* score of 4.5
 
-# for the rest, rows are the start, cols are the goals
+# for the rest, rows (A-M, BA-BD) are the start, cols (A-M, AA-AT, BA-BD) are the goals
 # ex: look at line 63 if you wanna start at point A, line 69 if point G, line 75 if point M
 # ex: from point G to point B, it's 75 meters away
 
@@ -55,10 +55,8 @@ letter_names = OrderedDict([
 # AA-AT represent food list above in order
 # BA, BB, BC, BD arent on campus (e.g. Agno Street); they're just used in the algo
 
-# grabe ang tagal ko rito
-
 adjacency_list = [
-    #  A    B    C    D    E    F    G    H    I    J    K    L    M    AA   AB   AC   AD   AE   AF   AG   AH   AI   AJ   AK   AL   AM   AN   AO   AP   AQ   AR   AS   AT   BA   BB   BC   BC 
+    #  A    B    C    D    E    F    G    H    I    J    K    L    M    AA   AB   AC   AD   AE   AF   AG   AH   AI   AJ   AK   AL   AM   AN   AO   AP   AQ   AR   AS   AT   BA   BB   BC   BD
     [ 5.0, 4.5, 3.0, 3.0, 3.0, 4.8, 3.0, 5.0, 3.0, 4.0, 3.0, 3.0, 3.0, 4.7, 3.9, 4.0, 4.0, 3.0, 4.0, 5.0, 4.0, 3.0, 4.9, 4.8, 4.2, 4.0, 4.0, 3.0, 4.2, 3.0, 4.0, 3.0, 3.9, 3.0, 3.0, 3.0, 3.0],
     [   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,  0,   0,   0,   0,   0,   0,   0,   0,   0,   1,   0,   0,    0,   0,   0,   0,   0,   0,   0,   0,   0,  49],
     [   0,   0,   0,   0,   0,   0,  75,   0,  83,   0,   0,  70,   0,   0,   0,  0,   0,   0,   1,   1,   0,   0,   1,   1,   0,   0,   0,    0,   0,   1,   0,   0,   0,   0,   0,   0,   0],
@@ -72,7 +70,11 @@ adjacency_list = [
     [   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,  0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,    0,   0,   0,   1,   0,   0,   0,   0,   0,  39],
     [   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,  0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,    0,   0,   0,   0,   0,   0,   0,   0,   0, 140],
     [   0,  70,   0,   0,   0, 200,   0,   0,   0,   0,   0,   0,   0,   0,   0,  0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,    0,   0,   0,   0,   0,   0,   0,  61,   0,   0],
-    [   0,   0,  52,   0,   0, 110,   0, 400,   0,   0,   0,   0,   0,   0,   0,  0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,    0,   0,   0,   0,   0,   0,   0,   0,   0,   0]
+    [   0,   0,  52,   0,   0, 110,   0, 400,   0,   0,   0,   0,   0,   0,   0,  0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,    0,   0,   0,   0,   0,   0,   0,   0,   0,   0],
+    [   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   1,  0,   0,   0,   0,   0,   1,   1,   0,   0,   0,   1,   1,    0,   0,   0,   0,   1,   0,   0,   1,   0,   0],
+    [   0,   0,   0,   0,   1,   0,   0,   0,   1,   0,   0,   1,   0,   0,   0,  0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,    0,   0,   0,   0,   0,   0,   1,   0,   1,   1],
+    [   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   1,   0,  1,   0,   1,   0,   0,   0,   0,   0,   0,   0,   0,   0,    1,   0,   0,   0,   0,   1,   0,   1,   0,   0]
+    [   1,   0,   0,   0,   0,   0,   0,   0,   0,   1,   1,   0,   0,   0,   0,  0,   1,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,    0,   0,   0,   0,   0,   0,   0,   1,   0,   0]
 ]
 
 def blind_search(start, end):

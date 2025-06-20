@@ -1,5 +1,11 @@
+import pandas as pd
+
+df = pd.read_excel("adjacency.xlsx", header=None)
+adjacency_list = df.values.tolist()
+
 from collections import OrderedDict, deque
 
+# === LABELS ===
 letter_names = OrderedDict([
     ("A", "Andrew - Br. Andrew Gonzales Hall"),
     ("B", "Bloemen - Br. Alphonsus Bloemen Hall"),
@@ -40,119 +46,86 @@ letter_names = OrderedDict([
     ("BD", "Fidel A. Reyes St.")
 ])
 
-adjacency_list = [
-    #  A    B    C    D    E    F    G    H    I    J    K    L    M    AA   AB   AC   AD   AE   AF   AG   AH   AI   AJ   AK   AL   AM   AN   AO   AP   AQ   AR   AS   AT   BA   BB   BC   BD
-    [ 5.0, 4.5, 3.0, 3.0, 3.0, 4.8, 3.0, 5.0, 3.0, 4.0, 3.0, 3.0, 3.0, 4.7, 3.9, 4.0, 4.0, 3.0, 4.0, 5.0, 4.0, 3.0, 4.9, 4.8, 4.2, 4.0, 4.0, 3.0, 4.2, 3.0, 4.0, 3.0, 3.9, 3.0, 3.0, 3.0, 3.0],
-    [   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   1,   0,   0,    0,   0,   0,   0,   0,   0,   0,   0,   0,  49],
-    [   0,   0,   0,   0,   0,   0,  75,   0,  83,   0,   0,  70,   0,   0,   0,   0,   0,   0,   1,   1,   0,   0,   1,   1,   0,   0,   0,    0,   0,   1,   0,   0,   0,   0,   0,   0,   0],
-    [   0,   0,   0,   0,   0,   0,   0, 280,   0,   0,   0,   0,  52,   0,   0,  0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,    0,   0,   0,   0,   0,   0,   0,   0,   0,   0],
-    [   0,   0,   0,   0,   0,   0, 140,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,    0,   0,   0,   0,   0,   0,   0,   0,   0,   0],
-    [   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,    0,   0,   0,   0,   0,   0,   0,  36,   0,   0,   0,   0],
-    [   0,   0,   0,   0,   0,   0, 180, 190,   0,   0,   0, 200, 110,   0,   0,  0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,    0,   0,   0,   0,   0,   0,   0,   0,   0,   0],
-    [   0,  75,   0, 140,   0, 180,   0,   0,  97,   0,   0,   0,   0,   0,   0,  0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,    0,   0,   0,   0,   0,   0,   0,   0,   0,   0],
-    [   0,   0, 280,   0,   0, 190,   0,   0,   0,   0,   0,   0, 400,   0,   0,  0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,    0, 110,   0,   0,   0,   0,   0,   0,   0,   0,   0],
-    [   0,  83,   0,   0,   0,   0,  97,   0,   0,   0,   0,   0,   0,   0,   0,  0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,    0,   0,   0,   0,   0,   0,   0,  51,   0,   0],
-    [   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,  0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,    0,   0,   0,   1,   0,   0,   0,   0,   0,  39],
-    [   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,  0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,    0,   0,   0,   0,   0,   0,   0,   0,   0, 140],
-    [   0,  70,   0,   0,   0, 200,   0,   0,   0,   0,   0,   0,   0,   0,   0,  0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,    0,   0,   0,   0,   0,   0,   0,  61,   0,   0],
-    [   0,   0,  52,   0,   0, 110,   0, 400,   0,   0,   0,   0,   0,   0,   0,  0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,    0,   0,   0,   0,   0,   0,   0,   0,   0,   0],
-    [   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   1,   0,   0,   0,   0,   0,   1,   1,   0,   0,   0,   1,   1,    0,   0,   0,   0,   1,   0,   0,   1,   0,   0],
-    [   0,   0,   0,   0,   1,   0,   0,   0,   1,   0,   0,   1,   0,   0,   0,  0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,    0,   0,   0,   0,   0,   0,   1,   0,   1,   1],
-    [   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   1,   0,   1,   0,   1,   0,   0,   0,   0,   0,   0,   0,   0,   0,    1,   0,   0,   0,   0,   1,   0,   1,   0,   0],
-    [   1,   0,   0,   0,   0,   0,   0,   0,   0,   1,   1,   0,   0,   0,   0,   0,   1,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,    0,   0,   0,   0,   0,   0,   0,   1,   0,   0]
-]
-
-def build_graph():
-    """
-    Build a bidirectional adjacency list (graph) from the adjacency matrix.
-    """
-    graph = {}
-    keys_list = list(letter_names.keys())
-    n = len(keys_list)
-
-    for i in range(2, len(adjacency_list)):
-        src = keys_list[i - 2]
-        graph.setdefault(src, [])
-        for j, weight in enumerate(adjacency_list[i][:n]):
-            if weight > 0:
-                dst = keys_list[j]
-                graph.setdefault(dst, [])
-                graph[src].append(dst)
-                graph[dst].append(src)
-    return graph
-
+# === BFS with Distance Tracking ===
 def blind_search(start, end):
-    """
-    Perform a simple BFS (blind) search from start to end.
-    """
-    graph = build_graph()
+    keys = list(letter_names.keys())
+    index_map = {k: i for i, k in enumerate(keys)}
     visited = set()
-    queue = deque([[start]])
+    queue = deque([([start], 0)])  # (path, total_distance)
 
     while queue:
-        path = queue.popleft()
-        node = path[-1]
+        path, total_dist = queue.popleft()
+        current = path[-1]
 
-        if node == end:
+        if current == end:
             print("Path:", " → ".join(path))
+            print("Total Distance:", total_dist, "meters")
             print("Steps:", len(path) - 1)
             return
 
-        if node not in visited:
-            visited.add(node)
-            for neighbor in graph.get(node, []):
-                queue.append(path + [neighbor])
+        if current not in visited:
+            visited.add(current)
+            cur_idx = index_map[current]
+
+            for next_idx, weight in enumerate(adjacency_list[cur_idx]):
+                if weight > 0:
+                    neighbor = keys[next_idx]
+                    if neighbor not in visited:
+                        queue.append((path + [neighbor], total_dist + weight))
 
     print("No path found.")
 
+# === Placeholder for Heuristic ===
 def heuristic_search(start, end):
-    """
-    Placeholder for heuristic search (e.g., A*).
-    """
-    print("\u001b[35mhello heuristic\u001b[0m")
+    print("\033[35mhello heuristic\033[0m")
 
+# === CLI Interface ===
 if __name__ == "__main__":
-    dlsu_number = 13  # campus buildings
-    food_number = 20  # food stalls
     letters_list = list(letter_names.keys())
     places_list  = list(letter_names.values())
 
     # Select campus building
     while True:
-        print("\u001b[42m\nWhere are you?\u001b[0m\u001b[32m")
-        for i in range(dlsu_number):
-            print(f"[{i+1}] {places_list[i]}")
-        try:
-            option = int(input("\n\u001b[0mYour option: "))
-        except ValueError:
-            print("\u001b[31mInvalid input! Please enter a number.\u001b[0m")
-            continue
-        if option < 1 or option > dlsu_number:
-            print("\u001b[31mInvalid Input!\u001b[0m")
-        else:
-            start = letters_list[option - 1]
+        while True:
+            print("\033[42m\nWhere are you?\033[0m\033[32m")
+            for i, place in enumerate(places_list):
+                print(f"[{i+1}] {place}")
+            try:
+                option = int(input("\n\033[0mYour option: "))
+            except ValueError:
+                print("\033[31mInvalid input! Please enter a number.\033[0m")
+                continue
+            if option < 1 or option > len(places_list):
+                print("\033[31mInvalid Input!\033[0m")
+            else:
+                start = letters_list[option - 1]
+                break
+
+        # Select any destination location (from all 38)
+        while True:
+            print("\033[44m\nWhere do you want to go?\033[0m\033[34m")
+            for i, place in enumerate(places_list):
+                print(f"[{i+1}] {place}")
+            try:
+                option = int(input("\n\033[0mYour option: "))
+            except ValueError:
+                print("\033[31mInvalid input! Please enter a number.\033[0m")
+                continue
+            if option < 1 or option > len(places_list):
+                print("\033[31mInvalid Input!\033[0m")
+            else:
+                end = letters_list[option - 1]
+                break
+
+        print("\033[43m\nYour shortest route using BLIND search:\033[0m")
+        blind_search(start, end)
+
+        print("\033[45m\nYour shortest route using HEURISTIC search:\033[0m")
+        heuristic_search(start, end)
+
+        print("\033[0m")  # reset colors
+    
+        again = input("\n\033[33mWould you like to find another path? (y/n): \033[0m").strip().lower()
+        if again != 'y':
+            print("\033[41mExiting program. Goodbye!\033[0m")
             break
-
-    # Select food stall
-    while True:
-        print("\u001b[44m\nWhere do you want to eat?\u001b[0m\u001b[34m")
-        for i in range(food_number):
-            print(f"[{i+1}] {places_list[dlsu_number + i]}")
-        try:
-            option = int(input("\n\u001b[0mYour option: "))
-        except ValueError:
-            print("\u001b[31mInvalid input! Please enter a number.\u001b[0m")
-            continue
-        if option < 1 or option > food_number:
-            print("\u001b[31mInvalid Input!\u001b[0m")
-        else:
-            end = letters_list[dlsu_number + option - 1]
-            break
-
-    print("\u001b[43m\nYour shortest route using BLIND search:\u001b[0m")
-    blind_search(start, end)
-
-    print("\u001b[45m\nYour shortest route using HEURISTIC search:\u001b[0m")
-    heuristic_search(start, end)
-
-    print("\u001b[0m")  # reset colors

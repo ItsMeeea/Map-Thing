@@ -1,11 +1,8 @@
+from collections import OrderedDict, deque
+import heapq
 import pandas as pd
-
 df = pd.read_excel("adjacency.xlsx", header=None)
 adjacency_list = df.values.tolist()
-
-from collections import OrderedDict, deque
-
-# === LABELS ===
 letter_names = OrderedDict([
     ("A", "Andrew - Br. Andrew Gonzales Hall"),
     ("B", "Bloemen - Br. Alphonsus Bloemen Hall"),
@@ -75,11 +72,79 @@ def blind_search(start, end):
 
     print("No path found.")
 
-# === Placeholder for Heuristic ===
-def heuristic_search(start, end):
-    print("\033[35mhello heuristic\033[0m")
+# --------------- HEURISTIC SEARCH ---------------------
+def build_weighted_graph():
+    """
+    Build a weighted adjacency list graph from the adjacency matrix.
+    """
+    graph = {}
+    keys = list(letter_names.keys())
+    n = len(keys)
 
-# === CLI Interface ===
+    for i in range(n):
+        src = keys[i]
+        graph[src] = []
+        for j in range(n):
+            weight = adjacency_list[i][j]
+            if weight > 0:
+                dst = keys[j]
+                graph[src].append((dst, weight))
+    return graph
+
+def get_heuristic(goal):
+    heuristic_values = [
+        5.0, 4.5, 3.0, 3.0, 3.0, 4.8, 3.0, 5.0, 3.0, 4.0, 3.0, 3.0, 3.0,
+        4.7, 3.9, 4.0, 4.0, 3.0, 4.0, 5.0, 4.0, 3.0, 4.9, 4.8, 4.2, 4.0,
+        4.0, 3.0, 4.2, 3.0, 4.0, 3.0, 3.9, 3.0, 3.0, 3.0, 3.0
+    ]
+    keys = list(letter_names.keys())
+    return {key: heuristic_values[i] for i, key in enumerate(keys)}
+
+def heuristic_search(start, goal):
+    graph = build_weighted_graph()
+    heuristics = get_heuristic(goal)
+
+    open_set = []
+    heapq.heappush(open_set, (heuristics[start], start))  # (f, node)
+
+    g = {start: 0}
+    h = {start: heuristics[start]}
+    f = {start: g[start] + h[start]}
+    parent = {start: None}
+    closed_set = set()
+
+    while open_set:
+        # Get the node in open_set with lowest f value
+        current_f, current = heapq.heappop(open_set)
+
+        if current == goal:
+            # Reconstruct path from goal to start
+            path = []
+            while current is not None:
+                path.insert(0, current)
+                current = parent[current]
+            print("Path:", " → ".join(path))
+            print("Steps:", len(path) - 1)
+            print("Total cost:", g[goal])
+            return
+
+        closed_set.add(current)
+
+        for neighbor, cost in graph.get(current, []):
+            if neighbor in closed_set:
+                continue
+
+            tentative_g = g[current] + cost
+
+            if neighbor not in g or tentative_g < g[neighbor]:
+                parent[neighbor] = current
+                g[neighbor] = tentative_g
+                h[neighbor] = heuristics.get(neighbor, float('inf'))
+                f[neighbor] = g[neighbor] + h[neighbor]
+                heapq.heappush(open_set, (f[neighbor], neighbor))
+
+    print("No path found.")
+
 if __name__ == "__main__":
     letters_list = list(letter_names.keys())
     places_list  = list(letter_names.values())

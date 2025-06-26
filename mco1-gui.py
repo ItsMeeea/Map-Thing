@@ -6,49 +6,65 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import matplotlib.pyplot as plt
 from collections import deque
 import heapq
+import textwrap
 
-# === 1. Load adjacency matrix from Excel (no headers) ===
-df = pd.read_excel('adjacency.xlsx', header=None)
-adjacency_matrix = df.values  # should be a 37×37 array
+# === 1. Load your two Excel files ===
+conn_df   = pd.read_excel("connections.xlsx", header=None, engine="openpyxl")
+dist_df   = pd.read_excel("distances.xlsx",   header=None, engine="openpyxl")
+conn      = conn_df.values    # 37×37 of 0/1
+distances = dist_df.values    # 37×37 of distances
 
-# === 2. Hard-coded 37 labels ===
-labels = [
-    'A','B','C','D','E','F','G','H','I','J','K','L','M',
-    'AA','AB','AC','AD','AE','AF','AG','AH','AI','AJ','AK','AL','AM','AN','AO','AP','AQ','AR','AS','AT',
-    'BA','BB','BC','BD'
-]
-
-# === 3. Static heuristic values (must match len(labels)=37) ===
-heuristic_list = [
-    5.0, 4.5, 3.0, 3.0, 3.0, 4.8, 3.0, 5.0, 3.0, 4.0, 3.0, 3.0, 3.0,
-    4.7, 3.9, 4.0, 4.0, 3.0, 4.0, 5.0, 4.0, 3.0, 4.9, 4.8, 4.2, 4.0,
-    4.0, 3.0, 4.2, 3.0, 4.0, 3.0, 3.9, 3.0, 3.0, 3.0, 3.0
-]
-heuristics = {lab: h for lab, h in zip(labels, heuristic_list)}
-
-# === 4. Graph builders ===
+# === 2. Full-names map & labels list ===
+letter_names = {
+    "A":  "Andrew – Br. Andrew Gonzales Hall",
+    "B":  "Bloemen – Br. Alphonsus Bloemen Hall",
+    "C":  "Connon – Br. Gabriel Connon Hall",
+    "D":  "Faculty Center",
+    "E":  "Gokongwei – John Gokongwei Sr. Hall",
+    "F":  "Henry Sy Sr. Hall",
+    "G":  "St. Joseph Hall",
+    "H":  "St. La Salle Hall",
+    "I":  "St. Miguel Febres Cordero Hall",
+    "J":  "Razon – Enrique M. Razon Sports Center",
+    "K":  "Science & Technology Research Center",
+    "L":  "Velasco – Urbano J. Velasco Hall",
+    "M":  "Yuchengco – Don Enrique T. Yuchengco Hall",
+    "AA": "24 Chicken",        "AB": "Ate Rica’s Bacsilog",
+    "AC": "Bab",               "AD": "The Barn",
+    "AE": "BBQ Nation",        "AF": "Chef Bab’s House of Sisig",
+    "AG": "Colonel’s Curry",   "AH": "Good Munch",
+    "AI": "Gyuniku",           "AJ": "Happy N’ Healthy (Bloomen)",
+    "AK": "The Hungry Pita",   "AL": "Kitchen City",
+    "AM": "Kuya Mel Kitchen",  "AN": "Lumpia.natics",
+    "AO": "Master Chop",       "AP": "McDonald’s",
+    "AQ": "Mongolian Master",  "AR": "Perico’s Grill",
+    "AS": "Tapa Loca",         "AT": "Tori Box",
+    "BA": "Agno Food Court",   "BB": "Agno St.",
+    "BC": "EGI Taft Tower",    "BD": "Fidel A. Reyes St."
+}
+labels = list(letter_names.keys())
+name_to_code = { fullname: code for code, fullname in letter_names.items() }
+full_names   = list(letter_names.values())
+# === 3. Build adjacency ===
 def build_graph_unweighted():
     g = {u: [] for u in labels}
-    for i, u in enumerate(labels):
-        for j, v in enumerate(labels):
-            if adjacency_matrix[i][j] > 0:
+    for i,u in enumerate(labels):
+        for j,v in enumerate(labels):
+            if conn[i,j] == 1:
                 g[u].append(v)
     return g
 
 def build_graph_weighted():
     g = {u: [] for u in labels}
-    for i, u in enumerate(labels):
-        for j, v in enumerate(labels):
-            w = adjacency_matrix[i][j]
-            if w > 0:
-                g[u].append((v, w))
+    for i,u in enumerate(labels):
+        for j,v in enumerate(labels):
+            if conn[i,j] == 1:
+                g[u].append((v, float(distances[i,j])))
     return g
 
-# === 5. BFS (blind) ===
+# === 4. BFS (blind) ===
 def blind_search(start, end):
-    graph = build_graph_unweighted()
-    visited = set()
-    queue = deque([[start]])
+    graph, visited, queue = build_graph_unweighted(), set(), deque([[start]])
     while queue:
         path = queue.popleft()
         node = path[-1]
@@ -60,185 +76,208 @@ def blind_search(start, end):
                 queue.append(path + [nbr])
     return None
 
-# === 6. A* (heuristic) ===
+# === 5. A* (heuristic) ===
 def heuristic_search(start, goal):
     graph = build_graph_weighted()
+    goal_idx = labels.index(goal)
+    hvals = {labels[i]: float(distances[i,goal_idx]) for i in range(len(labels))}
     open_set = []
-    g_score = {start: 0}
-    f_score = {start: heuristics[start]}
-    parent = {start: None}
-    heapq.heappush(open_set, (f_score[start], start))
-
+    g_score = {start:0.0}
+    f_score = {start:hvals[start]}
+    parent  = {start:None}
+    heapq.heappush(open_set,(f_score[start],start))
     while open_set:
-        _, current = heapq.heappop(open_set)
-        if current == goal:
-            path = []
+        _,current = heapq.heappop(open_set)
+        if current==goal:
+            path=[]
             while current:
-                path.insert(0, current)
-                current = parent[current]
+                path.insert(0,current)
+                current=parent[current]
             return path
-        for neighbor, cost in graph[current]:
-            tentative_g = g_score[current] + cost
-            if neighbor not in g_score or tentative_g < g_score[neighbor]:
-                parent[neighbor] = current
-                g_score[neighbor] = tentative_g
-                f_score[neighbor] = tentative_g + heuristics.get(neighbor, 0)
-                heapq.heappush(open_set, (f_score[neighbor], neighbor))
+        for neigh,c in graph[current]:
+            tg = g_score[current]+c
+            if neigh not in g_score or tg<g_score[neigh]:
+                parent[neigh]=current
+                g_score[neigh]=tg
+                f_score[neigh]=tg+hvals[neigh]
+                heapq.heappush(open_set,(f_score[neigh],neigh))
     return None
 
-# === 7. GUI & drawing ===
+# === 6. GUI & drawing ===
 def run_gui():
-    # Build the NetworkX graph
+    # build directed graph
     G = nx.DiGraph()
-    for i, u in enumerate(labels):
-        for j, v in enumerate(labels):
-            w = adjacency_matrix[i][j]
-            if w > 0:
-                G.add_edge(u, v, weight=w)
+    for u in labels:
+        for v,w in build_graph_weighted()[u]:
+            G.add_edge(u,v,weight=w)
 
-    # Fixed positions for plotting
+    # fixed positions
     pos = {
-        "A": (12,-5), "B":(-3,1), "C":(-12,-1), "D":(-6,0),  "E":(3,-3),
-        "F":(-8,-7), "G":(-6,-2), "H":(-13,-6),"I":(-1,-2), "J":(12,0),
-        "K":(10,0),  "L":(-4,-6), "M":(-8,-1), "AA":(-2,-7),"AB":(3,4),
-        "AC":(-1,-7),"AD":(15,-3),"AE":(0,-7), "AF":(-7,3), "AG":(-5.5,3),
-        "AH":(4,4),  "AI":(5,4),   "AJ":(-4,3),  "AK":(-2.5,3),"AL":(12,-7),
-        "AM":(6,4),  "AN":(7,4),   "AO":(1,-7),  "AP":(-15,-4),"AQ":(-1,3),
-        "AR":(12,4), "AS":(8,4),   "AT":(2,-7),  "BA":(5,0),   "BB":(2,-1),
-        "BC":(1,-5), "BD":(9,-2)
+        "A":  (12,-5),   "B":(-3,1),    "C":(-12,-1), "D":(-6,0),
+        "E":  (3,-3),    "F":(-8,-7),   "G":(-6,-2),  "H":(-13,-6),
+        "I":  (-1,-2),   "J":(12,0),    "K":(10,0),   "L":(-4,-6),
+        "M":  (-8,-1),   "AA":(-2,-7),  "AB":(3,4),   "AC":(-1,-7),
+        "AD": (15,-3),   "AE":(0,-7),   "AF":(-7,3),  "AG":(-5.5,3),
+        "AH": (4,4),     "AI":(5,4),    "AJ":(-4,3),  "AK":(-2.5,3),
+        "AL": (12,-7),   "AM":(6,4),    "AN":(7,4),   "AO":(1,-7),
+        "AP": (-15,-4),  "AQ":(-1,3),   "AR":(12,4),  "AS":(8,4),
+        "AT": (2,-7),    "BA":(5,0),    "BB":(2,-1),  "BC":(1,-5),
+        "BD": (9,-2)
     }
 
-    # Build UI
     root = tk.Tk()
-    root.title("Path Finder: BFS & A*")
-    root.geometry("1200x800")  # Window size
+    root.title("Path Finder: BFS vs A*")
+    root.geometry("1400x900")
+    root.configure(bg="#f2f2f2")
 
-    frm = tk.Frame(root)
-    frm.pack(pady=5)
+    frm = tk.Frame(root,bg="#f2f2f2"); frm.pack(pady=10)
+    ttk.Label(frm,text="Start:",background="#f2f2f2").grid(row=0,column=0)
+    sv = tk.StringVar(value=full_names[0])
+    ttk.Combobox(frm, textvariable=sv, values=full_names, width=30).grid(row=0, column=1, padx=5)
+    ttk.Label(frm,text="End:",background="#f2f2f2").grid(row=0,column=2)
+    ev = tk.StringVar(value=full_names[-1])
+    ttk.Combobox(frm, textvariable=ev, values=full_names, width=30).grid(row=0, column=3, padx=5)
 
-    tk.Label(frm, text="Start:").grid(row=0, column=0)
-    start_var = tk.StringVar(value=labels[0])
-    ttk.Combobox(frm, textvariable=start_var, values=labels, width=5)\
-        .grid(row=0, column=1, padx=5)
+    result_lbl = tk.Label(
+        frm,text="",justify="left",
+        font=("Segoe UI",10),bg="#f2f2f2"
+    )
+    result_lbl.grid(row=1,column=0,columnspan=5,sticky="w",pady=5)
 
-    tk.Label(frm, text="End:").grid(row=0, column=2)
-    end_var = tk.StringVar(value=labels[-1])
-    ttk.Combobox(frm, textvariable=end_var, values=labels, width=5)\
-        .grid(row=0, column=3, padx=5)
+    fig,ax = plt.subplots(figsize=(20,10))
+    fig.patch.set_facecolor("#f2f2f2")
+    ax.set_facecolor("#e8e8e8")
+    fig.subplots_adjust(.02,.02,.98,.98)
 
-    result_lbl = tk.Label(frm, text="", justify='left')
-    result_lbl.grid(row=1, column=0, columnspan=5, sticky='w')
+    canvas = FigureCanvasTkAgg(fig,master=root)
+    canvas.get_tk_widget().pack(fill="both",expand=True)
 
-    # —— HERE’S THE ONLY CHANGE: a more rectangular canvas
-    fig, ax = plt.subplots(figsize=(18, 6))      # ← width=18, height=6
-    fig.subplots_adjust(left=0.02, right=0.98, top=0.98, bottom=0.02)
-    canvas = FigureCanvasTkAgg(fig, master=root)
-    canvas.get_tk_widget().pack(fill="both", expand=True)
-
-    def draw(bfs_path=None, astar_path=None):
+    def draw(bfs_path=None,astar_path=None,goal=None):
         ax.clear()
+        ax.set_xticks([]); ax.set_yticks([])
 
-        # Base node colors
-        node_colors = []
-        for node in G.nodes():
-            if node in labels[:13]:       # A–M
-                node_colors.append("lightgreen")
-            elif node in labels[13:33]:   # AA–AT
-                node_colors.append("deepskyblue")
-            else:
-                node_colors.append("white")
+        # compute heuristics to this goal
+        hvals = {labels[i]: float(distances[i,labels.index(goal)])
+                 for i in range(len(labels))}
+
+        # node colors
+        cols=[]
+        for n in G.nodes():
+            idx=labels.index(n)
+            if idx<13:    cols.append("#a8d5a2")
+            elif idx<33:  cols.append("#9cc9e5")
+            else:         cols.append("#ffffff")
 
         nx.draw_networkx_nodes(
-            G, pos,
-            node_color=node_colors,
-            ax=ax,
-            node_size=500,
-            edgecolors='black'
+            G,pos,node_color=cols,node_size=2000,
+            node_shape="s",linewidths=1.2,edgecolors="#666666",ax=ax
         )
-        nx.draw_networkx_labels(G, pos, ax=ax, font_size=10)
-        nx.draw_networkx_edges(G, pos, edge_color="gray", ax=ax, arrows=False)
+
+        # wrap labels
+        wrapped = {
+            n:"\n".join(textwrap.wrap(letter_names[n],15))
+            for n in G.nodes()
+        }
+        nx.draw_networkx_labels(G,pos,labels=wrapped,font_size=7,ax=ax)
+
+        # draw heuristic next to each node
+        for n,(x,y) in pos.items():
+            ax.text(
+                x-0.5, y+0.6,
+                f"h={hvals[n]:.1f}",
+                fontsize=6, fontweight="bold",
+                color="#333333", zorder=10
+            )
+
+        # base edges
+        nx.draw_networkx_edges(
+            G,pos,edge_color="#bbbbbb",width=2,arrows=False,ax=ax
+        )
         nx.draw_networkx_edge_labels(
-            G, pos,
-            edge_labels={(u, v): d["weight"] for u, v, d in G.edges(data=True)},
-            ax=ax, font_size=8
+            G,pos,
+            edge_labels={(u,v):f"{d['weight']:.1f}" for u,v,d in G.edges(data=True)},
+            font_size=6,bbox=dict(facecolor="#f2f2f2",edgecolor="none",pad=0.2),
+            ax=ax
         )
 
-        # BFS in red
+        # BFS highlight
         if bfs_path:
-            bfs_edges = list(zip(bfs_path, bfs_path[1:]))
-            nx.draw_networkx_nodes(
-                G, pos,
-                nodelist=bfs_path,
-                node_color="red",
-                ax=ax,
-                node_size=500,
-                edgecolors='black'
-            )
-            nx.draw_networkx_edges(
-                G, pos,
-                edgelist=bfs_edges,
-                edge_color="red",
-                width=3,
-                ax=ax,
-                arrows=True
-            )
+            for u,v in zip(bfs_path,bfs_path[1:]):
+                x1,y1 = pos[u]; x2,y2 = pos[v]
+                ax.annotate(
+                    "",
+                    xy=(x2,y2), xytext=(x1,y1),
+                    arrowprops=dict(
+                        arrowstyle="->",
+                        color="#e57373",
+                        lw=3,
+                        ls="dashed",
+                        shrinkA=30,
+                        shrinkB=30
+                    )
+                )
 
-        # A* in yellow
+        # A* highlight
         if astar_path:
-            astar_edges = list(zip(astar_path, astar_path[1:]))
-            nx.draw_networkx_nodes(
-                G, pos,
-                nodelist=astar_path,
-                node_color="yellow",
-                ax=ax,
-                node_size=500,
-                edgecolors='black'
-            )
-            nx.draw_networkx_edges(
-                G, pos,
-                edgelist=astar_edges,
-                edge_color="yellow",
-                width=3,
-                ax=ax,
-                arrows=True
-            )
+            for u,v in zip(astar_path,astar_path[1:]):
+                x1,y1 = pos[u]; x2,y2 = pos[v]
+                ax.annotate(
+                    "",
+                    xy=(x2,y2), xytext=(x1,y1),
+                    arrowprops=dict(
+                        arrowstyle="->",
+                        color="#ffd54f",
+                        lw=3,
+                        ls="dashdot",
+                        shrinkA=30,
+                        shrinkB=30
+                    )
+                )
 
         canvas.draw()
 
     def on_find():
-        s, e = start_var.get(), end_var.get()
+        # map the chosen full names back to letter-codes
+        s_full = sv.get()
+        e_full = ev.get()
+        s = name_to_code[s_full]
+        e = name_to_code[e_full]
+
         bfs_p = blind_search(s, e)
         ast_p = heuristic_search(s, e)
 
-        # Calculate costs and steps
+        # BFS result
         if bfs_p:
-            bfs_cost = sum(
-                adjacency_matrix[labels.index(bfs_p[i])][labels.index(bfs_p[i+1])]
+            cost = sum(
+                distances[labels.index(bfs_p[i]), labels.index(bfs_p[i+1])]
                 for i in range(len(bfs_p)-1)
             )
-            bfs_steps = len(bfs_p)-1
-            bfs_text = f"BFS → {'→'.join(bfs_p)} (steps: {bfs_steps}, cost: {bfs_cost})"
+            bfs_names = [letter_names[n] for n in bfs_p]
+            txt1 = f"BFS → {' → '.join(bfs_names)}   steps:{len(bfs_p)-1}, cost:{cost:.1f}"
         else:
-            bfs_text = "BFS → No path found"
+            txt1 = "BFS → no path"
 
+        # A* result
         if ast_p:
-            ast_cost = sum(
-                adjacency_matrix[labels.index(ast_p[i])][labels.index(ast_p[i+1])]
+            cost = sum(
+                distances[labels.index(ast_p[i]), labels.index(ast_p[i+1])]
                 for i in range(len(ast_p)-1)
             )
-            ast_steps = len(ast_p)-1
-            ast_text = f"A*  → {'→'.join(ast_p)} (steps: {ast_steps}, cost: {ast_cost})"
+            ast_names = [letter_names[n] for n in ast_p]
+            txt2 = f"A*  → {' → '.join(ast_names)}   steps:{len(ast_p)-1}, cost:{cost:.1f}"
         else:
-            ast_text = "A*  → No path found"
+            txt2 = "A* → no path"
 
-        result_lbl.config(text=f"{bfs_text}\n{ast_text}")
-        draw(bfs_p, ast_p)
+        result_lbl.config(text=f"{txt1}\n{txt2}")
+        draw(bfs_path=bfs_p, astar_path=ast_p, goal=e)
 
-    tk.Button(frm, text="Find Path", command=on_find)\
-        .grid(row=0, column=4, padx=5)
 
-    draw()
+    ttk.Button(frm,text="Find Path",command=on_find,width=14)\
+       .grid(row=0,column=4,padx=10)
+
+    # initial draw (default end)
+    draw(goal=labels[-1])
     root.mainloop()
 
-if __name__ == '__main__':
+if __name__=="__main__":
     run_gui()

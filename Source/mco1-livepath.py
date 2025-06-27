@@ -33,7 +33,7 @@ letter_names = {
     "AC": "Bab",               "AD": "The Barn",
     "AE": "BBQ Nation",        "AF": "Chef Bab’s House of Sisig",
     "AG": "Colonel’s Curry",   "AH": "Good Munch",
-    "AI": "Gyuniku",           "AJ": "Happy N’ Healthy (Bloomen)",
+    "AI": "Gyuniku",           "AJ": "Happy N’ Healthy (Bloemen)",
     "AK": "The Hungry Pita",   "AL": "Kitchen City",
     "AM": "Kuya Mel Kitchen",  "AN": "Lumpia.natics",
     "AO": "Master Chop",       "AP": "McDonald’s",

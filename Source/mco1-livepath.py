@@ -33,7 +33,7 @@ letter_names = {
     "AC": "Bab",               "AD": "The Barn",
     "AE": "BBQ Nation",        "AF": "Chef Bab’s House of Sisig",
     "AG": "Colonel’s Curry",   "AH": "Good Munch",
-    "AI": "Gyuniku",           "AJ": "Happy N’ Healthy (Bloemen)",
+    "AI": "Gyuniku",           "AJ": "Happy N’ Healthy (Bloomen)",
     "AK": "The Hungry Pita",   "AL": "Kitchen City",
     "AM": "Kuya Mel Kitchen",  "AN": "Lumpia.natics",
     "AO": "Master Chop",       "AP": "McDonald’s",
@@ -196,7 +196,12 @@ def run_gui():
                     draw()
                     root.after(500, step)
                 elif ev_type == "done":
-                    status_var.set("A* search complete.")
+                    # compute total walking distance along the found path
+                    total = sum(
+                        distances[labels.index(data[i]), labels.index(data[i+1])]
+                        for i in range(len(data) - 1)
+                    )
+                    status_var.set(f"A* search complete.  Total distance: {total:.1f} m")
                     draw(path=data)
             except StopIteration:
                 status_var.set("A* search finished.")
@@ -216,8 +221,12 @@ def run_gui():
                     draw()
                     root.after(500, step)
                 elif ev_type == "done":
-                    status_var.set("BFS search complete.")
-                    draw(path=data)
+                    total = sum(
+                    distances[labels.index(data[i]), labels.index(data[i+1])]
+                    for i in range(len(data) - 1)
+                )
+                status_var.set(f"BFS search complete.  Total distance: {total:.1f} m")
+                draw(path=data)
             except StopIteration:
                 status_var.set("BFS search finished.")
         step()

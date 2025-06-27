@@ -133,13 +133,22 @@ def run_gui():
     root.title("Live Pathfinding (A* and BFS)")
     root.geometry("1400x940")
 
-    frm = tk.Frame(root); frm.pack(pady=10)
-    ttk.Label(frm,text="Start:").grid(row=0,column=0)
+    frm = tk.Frame(root)
+    frm.pack(pady=10)
+
+    # Start selector
+    ttk.Label(frm, text="Start:").grid(row=0, column=0)
     sv = tk.StringVar(value=full_names[0])
-    ttk.Combobox(frm, textvariable=sv, values=full_names, width=40).grid(row=0, column=1, padx=5)
-    ttk.Label(frm,text="End:").grid(row=0,column=2)
+    ttk.Combobox(frm, textvariable=sv, values=full_names, width=40)\
+        .grid(row=0, column=1, padx=5)
+
+    # End selector
+    ttk.Label(frm, text="End:").grid(row=0, column=2)
     ev = tk.StringVar(value=full_names[-1])
-    ttk.Combobox(frm, textvariable=ev, values=full_names, width=40).grid(row=0, column=3, padx=5)
+    end_cb = ttk.Combobox(frm, textvariable=ev, values=full_names, width=40)
+    end_cb.grid(row=0, column=3, padx=5)
+    end_cb.bind("<<ComboboxSelected>>", lambda _: draw())
+
 
     status_var = tk.StringVar()
     status_lbl = ttk.Label(frm, textvariable=status_var, background="#f2f2f2", font=("Segoe UI", 10))
@@ -155,6 +164,11 @@ def run_gui():
 
     def draw(current=None, path=None):
         ax.clear()
+        goal = name_to_code[ev.get()]
+        hvals = {
+            labels[i]: float(distances[i, labels.index(goal)])
+            for i in range(len(labels))
+        }
         ax.set_xticks([]); ax.set_yticks([])
         colors = []
         for n in G.nodes():
@@ -169,12 +183,49 @@ def run_gui():
                 colors.append("#9cc9e5")
             else:
                 colors.append("#ffffff")
+                
+        goal_code = name_to_code[ev.get()]
+        hvals = {
+            labels[i]: float(distances[i, labels.index(goal_code)])
+            for i in range(len(labels))
+        }
 
         nx.draw_networkx_nodes(G, pos, node_color=colors, node_size=2000, node_shape="s", linewidths=1.2, edgecolors="#666666", ax=ax)
         nx.draw_networkx_edges(G, pos, edge_color="#bbbbbb", width=2, arrows=False, ax=ax)
         nx.draw_networkx_edge_labels(G, pos, edge_labels={(u,v):f"{d['weight']:.1f}" for u,v,d in G.edges(data=True)}, font_size=6, bbox=dict(facecolor="#f2f2f2", edgecolor="none", pad=0.2), ax=ax)
         wrapped = {n: "\n".join(textwrap.wrap(letter_names[n], 15)) for n in G.nodes()}
         nx.draw_networkx_labels(G, pos, labels=wrapped, font_size=7, ax=ax)
+        
+        # overlay straight-line heuristic h(n) → current goal
+        goal_code = name_to_code[ev.get()]
+        hvals = {
+            labels[i]: float(distances[i, labels.index(goal_code)])
+            for i in range(len(labels))
+        }
+        for node, (x, y) in pos.items():
+            ax.text(
+                x - 0.5, y + 0.6,
+                f"h={hvals[node]:.1f}",
+                fontsize=6, fontweight="bold",
+                color="#333333", zorder=10
+            )
+
+        
+        for n, (x,y) in pos.items():
+            ax.text(
+                x-0.5, y+0.6,
+                f"h={hvals[n]:.1f}",
+                fontsize=6, fontweight="bold",
+                color="#333333", zorder=10
+            )
+        
+        for n, (x, y) in pos.items():
+            ax.text(
+                x - 0.5, y + 0.6,
+                f"h={hvals[n]:.1f}",
+                fontsize=6, fontweight="bold",
+                color="#333333", zorder=10
+            )
 
         if path:
             for u,v in zip(path,path[1:]):
@@ -201,7 +252,7 @@ def run_gui():
                         distances[labels.index(data[i]), labels.index(data[i+1])]
                         for i in range(len(data) - 1)
                     )
-                    status_var.set(f"A* search complete.  Total distance: {total:.1f} m")
+                    status_var.set(f"A* search complete.  Total distance: {total:.1f} units")
                     draw(path=data)
             except StopIteration:
                 status_var.set("A* search finished.")
@@ -220,13 +271,15 @@ def run_gui():
                     status_var.set(f"BFS visiting: {letter_names[data]}")
                     draw()
                     root.after(500, step)
+
                 elif ev_type == "done":
                     total = sum(
-                    distances[labels.index(data[i]), labels.index(data[i+1])]
-                    for i in range(len(data) - 1)
-                )
-                status_var.set(f"BFS search complete.  Total distance: {total:.1f} m")
-                draw(path=data)
+                        distances[labels.index(data[i]), labels.index(data[i+1])]
+                        for i in range(len(data) - 1)
+                    )
+                    status_var.set(f"BFS search complete.  Total distance: {total:.1f} m")
+                    draw(path=data)
+
             except StopIteration:
                 status_var.set("BFS search finished.")
         step()
